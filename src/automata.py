@@ -1,50 +1,63 @@
 """Implementação de autômatos finitos."""
 
+from typing import List, Dict, Tuple
 
-def load_automata(filename):
-    """
-    Lê os dados de um autômato finito a partir de um arquivo.
-
-    A estsrutura do arquivo deve ser:
-
-    <lista de símbolos do alfabeto, separados por espaço (' ')>
-    <lista de nomes de estados>
-    <lista de nomes de estados finais>
-    <nome do estado inicial>
-    <lista de regras de transição, com "origem símbolo destino">
-
-    Um exemplo de arquivo válido é:
-
-    ```
-    a b
-    q0 q1 q2 q3
-    q0 q3
-    q0
-    q0 a q1
-    q0 b q2
-    q1 a q0
-    q1 b q3
-    q2 a q3
-    q2 b q0
-    q3 a q1
-    q3 b q2
-    ```
-
-    Caso o arquivo seja inválido uma exceção Exception é gerada.
-
-    """
-
-    with open(filename, "rt") as arquivo:
-        # processa arquivo...
-        pass
-
-
-def process(automata, words):
-    """
-    Processa a lista de palavras e retora o resultado.
+class AutomataException(Exception):
+    pass
     
-    Os resultados válidos são ACEITA, REJEITA, INVALIDA.
-    """
+def load_automata(filename: str) -> Tuple[List[str], List[str], Dict[Tuple[str, str], str], str, List[str]]:
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            lines = file.read().splitlines()
+
+        if len(lines) < 5:
+            raise AutomataException("Formato do arquivo incorreto ou incompleto.")
+
+        alfabeto = lines[0].split()
+        estados = lines[1].split()
+        finais = lines[2].split()
+        inicial = lines[3]
+        
+        delta = {}
+        for line in lines[4:]:
+            parts = line.split()
+            if len(parts) != 3:
+                raise AutomataException(f"Transição inválida: {line}")
+            origem, simbolo, destino = parts
+            if origem not in estados or destino not in estados or simbolo not in alfabeto:
+                raise AutomataException(f"Transição inválida: {line}")
+            delta[(origem, simbolo)] = destino
+        
+        return estados, alfabeto, delta, inicial, finais
+
+    except FileNotFoundError:
+        raise AutomataException(f"Arquivo {filename} não encontrado.")
+    except Exception as e:
+        raise AutomataException(f"Erro ao carregar o autômato: {str(e)}")
+        
+def process(automata: Tuple[List[str], List[str], Dict[Tuple[str, str], str], str, List[str]], 
+            words: List[str]) -> Dict[str, str]:
+    estados, alfabeto, delta, inicial, finais = automata
+    results = {}
 
     for word in words:
-        # tenta reconhecer `word`
+        if any(symbol not in alfabeto for symbol in word):
+            results[word] = 'INVÁLIDA'
+            continue
+        
+        current_state = inicial
+        for symbol in word:
+            if (current_state, symbol) in delta:
+                current_state = delta[(current_state, symbol)]
+            else:
+                current_state = None
+                break
+        
+        if current_state is None:
+            results[word] = 'REJEITA'
+        elif current_state in F:
+            results[word] = 'ACEITA'
+        else:
+            results[word] = 'REJEITA'
+
+    return results
