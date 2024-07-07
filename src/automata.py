@@ -55,7 +55,7 @@ def process(automata: Tuple[List[str], List[str], Dict[Tuple[str, str], str], st
         
         if current_state is None:
             results[word] = 'REJEITA'
-        elif current_state in F:
+        elif current_state in finais:
             results[word] = 'ACEITA'
         else:
             results[word] = 'REJEITA'
